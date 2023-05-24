@@ -3,21 +3,35 @@ import './App.css';
 import {useEffect, useState} from 'react';
 import io from 'socket.io-client';
 import { useRef } from 'react';
-// const socket = io.connect("http://localhost:5000");
+const socket = io.connect("http://localhost:5000");
 function App() {
   const socketRef = useRef(null);
   useEffect(() => {
-    socketRef.current = io.connect("https://socket-io-file-sharing.onrender.com");
-    socketRef.current.on('receive_file', receiveFileData);
-    return () => {
-      socketRef.current.disconnect();
-    }
-  },[]);
+    socket.on('connection', (data) => {
+      console.log("connected");
+    });
+    const receiveFileData = ({ fileName, fileType, fileData }) => {
+      console.log("mudit tiwari");
+      const fileBlob = new Blob(fileData, { type: fileType });
+      const downloadLink = URL.createObjectURL(fileBlob);
+      const downloadElement = document.createElement('a');
+      downloadElement.href = downloadLink;
+      downloadElement.download = "downloaded_file";
+      downloadElement.click();
+      URL.revokeObjectURL(downloadLink);
+    };
+    socket.on('receive_file', receiveFileData);
+    // socketRef.current = io.connect("https://socket-io-file-sharing.onrender.com");
+    // socketRef.current.on('receive_file', receiveFileData);
+    // return () => {
+    //   socket.disconnect();
+    // }
+  },[socket]);
+  
   const sendFile = (file) => {
     const chunkSize = 64 * 1024; // Set the desired chunk size
     const totalChunks = Math.ceil(file.size / chunkSize);
     let chunkIndex = 0;
-
     const reader = new FileReader();
     reader.onload = () => {
       const buffer = reader.result;
@@ -30,22 +44,13 @@ function App() {
         chunks.push(chunk);
       }
 
-      socketRef.current.emit('fileData', { fileName: file.name, fileType: file.type, fileData: chunks });
+      socket.emit('fileData', { fileName: file.name, fileType: file.type, fileData: chunks });
     };
 
     reader.readAsArrayBuffer(file);
   };
-  const receiveFileData = ({ fileName, fileType, fileData }) => {
-    console.log("mudit tiwari");
-    const fileBlob = new Blob(fileData, { type: fileType });
-    const downloadLink = URL.createObjectURL(fileBlob);
-    const downloadElement = document.createElement('a');
-    downloadElement.href = downloadLink;
-    downloadElement.download = "downloaded_file";
-    downloadElement.click();
-    URL.revokeObjectURL(downloadLink);
-  };
-
+  
+  
   const [file,setFile]=useState(null);
   return (
     <div className="App">
