@@ -3,7 +3,7 @@ import './App.css';
 import {useEffect, useState} from 'react';
 import io from 'socket.io-client';
 import { useRef } from 'react';
-const socket = io.connect("http://localhost:5000");
+const socket = io.connect("http://https://socket-io-file-sharing.onrender.com:5000");
 function App() {
   const socketRef = useRef(null);
   useEffect(() => {
