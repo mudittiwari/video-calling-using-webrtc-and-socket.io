@@ -73,7 +73,7 @@ function Room() {
     return (
         <>
             <div className="flex justify-center items-center h-screen" style={{ "backgroundColor": '#67539f' }}>
-                <div className="bg-white bg-opacity-20 backdrop-filterbackdrop-blur-lg rounded-lg p-8 shadow-lg">
+                <div className="bg-white bg-opacity-20 backdrop-filterbackdrop-blur-lg rounded-lg p-8 shadow-lg" style={{"maxWidth":"90vw"}}>
                     <div className='flex justify-between items-center mb-2'>
                         <h2 className="text-xs text-white w-full text-center">URL: {url.slice(0, 15)}...... </h2>
                         <button
