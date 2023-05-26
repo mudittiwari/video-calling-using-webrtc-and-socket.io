@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, useContext } from 'react';
 import { SocketContext } from './context/socket';
 import { useNavigate } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
+
 import LoadingBar from './Loadingbar';
 function Login() {
     const navigate = useNavigate();
@@ -11,6 +13,18 @@ function Login() {
     const [username2, setUsername2] = useState("");
     const [password2, setPassword2] = useState("");
     const [loading, setLoading] = useState(false);
+    const notify = () => toast.error('Room already Exists',{
+        iconTheme: {
+            primary: '#67539f',
+            secondary: '#fff',
+          },
+    });
+    const notify2 = () => toast.error('Room Not Found',{
+        iconTheme: {
+            primary: '#67539f',
+            secondary: '#fff',
+          },
+    });
     const handleroomcreated = useCallback((data) => {
         setLoading(false);
         navigate('/room', { state: { 'users': data.users, "room_url": data.url } })
@@ -20,16 +34,39 @@ function Login() {
         setLoading(false);
         navigate('/room', { state: { 'users': data.users, 'room_url': data.url } })
     }, []);
+    const handleroomalreadycreated = useCallback((data) => {
+        console.log(data);
+        setLoading(false);
+        if(data.message=="Room already exists"){
+            
+            notify();
+        }
+    }, []);
+    const handleroomnotexists = useCallback((data) => {
+        console.log(data);
+        setLoading(false);
+        if(data.message=="Room Not Found"){
+            
+            notify2();
+        }
+    }, []);
+    
+    
     useEffect(() => {
+        
         socket.on('connection', (data) => {
             console.log("connected");
         });
         socket.on('room_created', handleroomcreated);
         socket.on('room_joined', handleroomjoined);
+        socket.on('room_already_exists', handleroomalreadycreated);
+        socket.on('room_not_found', handleroomnotexists);
         return () => {
             socket.off('connection');
             socket.off('room_created', handleroomcreated);
             socket.off('room_joined', handleroomjoined);
+            socket.off('room_already_exists', handleroomalreadycreated);
+            socket.off('room_not_found', handleroomnotexists);
             // const receiveFileData = ({ fileName, fileType, fileData }) => {
             //   console.log("mudit tiwari");
             //   const fileBlob = new Blob(fileData, { type: fileType });
@@ -43,10 +80,11 @@ function Login() {
             // socket.on('receive_file', receiveFileData);
             // }
         }
-    }, [socket, handleroomcreated, handleroomjoined]);
+    }, [socket, handleroomcreated, handleroomjoined, handleroomalreadycreated]);
     return (
         <>
         {loading && <LoadingBar/>}
+        <Toaster />
             <div className="flex justify-center items-center h-screen" style={{ "backgroundColor": '#67539f' }}>
                 <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-8 shadow-lg">
 
