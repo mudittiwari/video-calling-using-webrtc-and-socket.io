@@ -55,3 +55,25 @@
 ::-webkit-scrollbar-thumb:hover {
   background:rgb(107 33 168 / var(--tw-bg-opacity));;
 }
+.main
+{
+  background: #c7ecee;
+  box-shadow: 7px 7px 15px rgba(55, 84, 170, 0.15),
+  -7px -7px 20px rgba(255, 255, 255, 1),
+  inset 0px 0px 4px rgba(255, 255, 255, 0.2),
+  inset 7px 7px 15px rgba(55, 84, 170, 0),
+  inset -7px -7px 20px rgba(255, 255, 255, 0),
+  0px 0px 4px rgba(255, 255, 255, 0) !important;
+}
+.text
+{
+  color:#83928a;
+}
+.field
+{
+  background-color: #83928a;
+  color:white;
+}
+input::placeholder{
+  color: white;
+}

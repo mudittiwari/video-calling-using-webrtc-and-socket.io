@@ -1,7 +1,7 @@
 {
-  "name": "socket.io-file-sharing",
+  "name": "client",
   "version": "0.1.0",
-  "homepage": "http://mudittiwari.github.io/socket.io_file_sharing_frontend",
+  "homepage": "http://mudittiwari.github.io/webrtc",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.6",
@@ -9,10 +9,13 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.4.0",
     "gh-pages": "^5.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
+    "react-icons": "^4.9.0",
+    "react-player": "^2.12.0",
     "react-router-dom": "^6.4.0",
     "react-scripts": "5.0.1",
     "socket.io-client": "^4.6.1",
