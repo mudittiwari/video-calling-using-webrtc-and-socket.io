@@ -6,7 +6,6 @@ import {PeerContext, peer} from './context/peer';
 import Login from './Login';
 import Room from './Room';
 function App() {
- 
   return (
     <PeerContext.Provider value={peer}>
     <SocketContext.Provider value={socket}>

@@ -7,21 +7,21 @@ import { BsFillMicFill, BsFillCameraVideoFill, BsFillCameraVideoOffFill, BsMicMu
 import { PeerContext } from "./context/peer";
 import { SocketContext } from './context/socket';
 import toast, { Toaster } from 'react-hot-toast';
-
 function Room() {
   const peer = useContext(PeerContext);
   const location = useLocation();
   const [videoicon, setVideoicon] = useState(<BsFillCameraVideoFill className="text text-xl" />);
   const [audioicon, setAudioicon] = useState(<BsFillMicFill className="text text-xl" />);
   const [mystream, setMystream] = useState(null);
-  const [mystreamtoshow,setmystreamtoshow]=useState(null);
-  const [senderid, setsenderid] = useState([]);
+  const [userstreamtoshow, setuserstreamtoshow] = useState(null);
+  const [useraudiotoshow, setuseraudiotoshow] = useState(null);
+  const [uservideotoshow, setuservideotoshow] = useState(null);
+  const [useraudio, setuseraudio] = useState(true)
+  const [uservideo, setuservideo] = useState(true)
   const [share, setShare] = useState('hidden');
   const [call, setCall] = useState('visible');
   const [audio, setAudio] = useState(true);
   const [video_, setVideo] = useState(true);
-  const [intervalId, setIntervalId] = useState(null);
-  const [count, setCount] = useState(0);
   const [userstream, setUserstream] = useState(null);
   const socket = useContext(SocketContext);
   const [users, setUsers] = useState([]);
@@ -45,6 +45,10 @@ function Room() {
       secondary: '#fff',
     },
   });
+  const notify3=()=>toast("Url copied to clipboard",{iconTheme: {
+      primary: '#67539f',
+      secondary: '#fff',
+  }})
 
   const createoffer = async (data) => {
     const offer = await peer.createOffer();
@@ -124,15 +128,11 @@ function Room() {
   const handleuserleft = useCallback((data) => {
     notify2(data.user);
   }, []);
-  async function setmine(stream)
-    {
-      const tracks=stream.getTracks();
-      const video=stream.getVideoTracks()[0]
-      // console.log(video);
-      stream.removeTrack(video)
-      setMystream(stream);
-      console.log(stream.getTracks())
-    }
+  async function setuserstream(useraudio, uservideo) {
+    // console.log(userstream_.getTracks())
+    setuseraudio(useraudio)
+    setuservideo(uservideo)
+  }
   async function setstream() {
     setMystream(null);
     navigator.mediaDevices.enumerateDevices()
@@ -170,7 +170,6 @@ function Room() {
             .then(function(stream) {
               console.log(stream);
               setMystream(stream);
-              setmine(stream)
             })
             .catch(function(error) {
               console.error('Error accessing media devices:', error);
@@ -193,7 +192,17 @@ function Room() {
     const remoteStream = e.streams;
     console.log(remoteStream);
     console.log("GOT TRACKS!!");
+    // userstream_=remoteStream[0];
     setUserstream(remoteStream[0]);
+    setuserstreamtoshow(remoteStream[0])
+    let stream = remoteStream[0].clone();
+    const video = stream.getVideoTracks()[0]
+    stream.removeTrack(video)
+    setuseraudiotoshow(stream);
+    stream = remoteStream[0].clone();
+    const audio = stream.getAudioTracks()[0]
+    stream.removeTrack(audio)
+    setuservideotoshow(stream);
   }, [])
   const handlesenddata = useCallback((data) => {
     console.log("Sending streams");
@@ -214,19 +223,24 @@ function Room() {
 
     }
   }, []);
+
+
+  const handleuserstreamchanged = useCallback((data) => {
+    const { audio, video } = data;
+    console.log(data)
+    setuserstream(audio, video);
+  }, []);
   useEffect(() => {
     setstream();
   }, [audio, video_]);
   useEffect(() => {
-
-
-
     socket.on('room_data', handleroomjoined);
     socket.on('user_joined', handleuserjoined);
     socket.on('user_disconnected', handleuserleft);
     // socket.on('send_data_again', handlesenddataagain);
     socket.on('offer_received', handleofferreceived);
     socket.on('answer_received', handleanswerreceived);
+    socket.on('userstream_changed', handleuserstreamchanged);
     socket.on("send_data", handlesenddata);
     peer.addEventListener('negotiationneeded', handlenegotiation);
     peer.addEventListener("track", handletrack)
@@ -235,7 +249,7 @@ function Room() {
       socket.off('room_data', handleroomjoined);
       peer.removeEventListener('negotiationneeded', handlenegotiation);
       peer.removeEventListener('track', handletrack);
-
+      socket.off('userstream_changed', handleuserstreamchanged);
       socket.off('user_joined', handleuserjoined);
       socket.off('user_disconnected', handleuserleft);
       // socket.off('send_data_again', handlesenddataagain);
@@ -243,7 +257,7 @@ function Room() {
       socket.off('answer_received', handleanswerreceived);
       socket.off("send_data", handlesenddata);
     }
-  }, []);
+  }, [userstream]);
   return (
     <>
       <Toaster />
@@ -257,6 +271,7 @@ function Room() {
             onClick={(e) => {
               e.preventDefault();
               navigator.clipboard.writeText(url);
+              notify3()
             }}
           >
             Copy
@@ -264,88 +279,43 @@ function Room() {
         </div>
         <div className="w-full flex flex-col mt-10  md:flex-row items-center md:items-start justify-evenly">
           <div className="bg-white w-4/5 md:w-2/5 h-max bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-8 main" >
-            
-            {/* <div className='flex justify-between items-center mb-2'>
-                        <h2 className="text-xs text w-full text-center">URL: {url.slice(0, 15)}...... </h2>
-                        <button
-                            className="w-24 text main py-1 px-2 rounded focus:outline-none"
-                            type="submit"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                navigator.clipboard.writeText(url);
-                            }}
-                        >
-                            Copy
-                        </button>
-                    </div>
-                    <h2 className="text-2xl text mb-5 mt-5 w-full text-center">Room Members</h2>
-                    <div className="overflow-y-auto h-32">
 
-                        {users.map((user, index) => {
-                            return (
-                                <div key={index} className="flex justify-between items-center mb-2">
-                                    <h2 className="text-xs text w-full my-1 text-start">{user}</h2>
-                                </div>
-                            );
-                        })}
 
-                    </div>
-                    <div className="flex">
-                    
-
-                    </div> */}
-            <div className="w-full">
+            <div className="w-full" style={{'height':'400px','overflow':'hidden'}}>
               {location.state.type === "owner" ? <h2 className="text-2xl text mb-5 w-full text-center">{users[0]}</h2> : <h2 className="text-2xl text mb-5 w-full text-center">{users[1]}</h2>}
-              <ReactPlayer url={mystream} muted playing={true} controls={true} width="100%" height="100%" />
+             <div className='hidden md:block'> <ReactPlayer url={mystream} width="100%" height="400px" muted playing={true} controls={false} /></div>
+              <div className='block md:hidden'> <ReactPlayer url={mystream} width="100%" height="300px" muted playing={true} controls={false} /></div>
 
             </div>
 
           </div>
           <div className="bg-white mt-5 md:mt-0 w-4/5 md:w-2/5 h-max bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-8 main" >
-            {/* <div className='flex justify-between items-center mb-2'>
-                        <h2 className="text-xs text w-full text-center">URL: {url.slice(0, 15)}...... </h2>
-                        <button
-                            className="w-24 text main py-1 px-2 rounded focus:outline-none"
-                            type="submit"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                navigator.clipboard.writeText(url);
-                            }}
-                        >
-                            Copy
-                        </button>
-                    </div>
-                    <h2 className="text-2xl text mb-5 mt-5 w-full text-center">Room Members</h2>
-                    <div className="overflow-y-auto h-32">
 
-                        {users.map((user, index) => {
-                            return (
-                                <div key={index} className="flex justify-between items-center mb-2">
-                                    <h2 className="text-xs text w-full my-1 text-start">{user}</h2>
-                                </div>
-                            );
-                        })}
 
-                    </div>
-                    <div className="flex">
-                    
+            <div className="w-full" style={{'height':'400px'}}>
 
-                    </div> */}
-
-            <div className="w-full">
               {users.length > 1 && (location.state.type === "participant" ? <h2 className="text-2xl text mb-5 w-full text-center">{users[0]}</h2> : <h2 className="text-2xl text mb-5 w-full text-center">{users[1]}</h2>)}
-              {userstream && <ReactPlayer url={userstream} playing={true} controls={true} width="100%" height="100%" />}
+              {console.log(useraudio, uservideo)}
+              {useraudio && uservideo && <ReactPlayer url={userstreamtoshow} playing={true} controls={false} width="100%" height="80%" />}
+              {!useraudio && uservideo && <ReactPlayer url={uservideotoshow} playing={true} controls={false} width="100%" height="80%"/>}
+              {useraudio && !uservideo && <ReactPlayer url={useraudiotoshow} playing={true} controls={false} width="100%" height="80%" />}
+              {users.length > 1 && (location.state.type == "owner" && (userstream == null ? <div className="w-full flex"><h2 className="text-2xl text mb-5 w-full text-center">waiting for {users[1]} to join</h2></div> : <h1></h1>))}
 
-              {users.length > 1 && (location.state.type == "participant" && (userstream == null ? <div className="w-full flex">
+              
+             
+
+            </div>
+            
+             
+          </div>
+          
+          {users.length > 1 && (location.state.type == "participant" && (userstream == null ? <div className="w-full flex justify-center mt-5">
                 <button
                   className={share + " w-24 text main py-1 px-2 rounded focus:outline-none"}
                   type="submit"
                   onClick={(e) => {
                     e.preventDefault();
                     socket.emit("send_streams", { "password": location.state.room_url });
-                    // socket.emit("send_streams", { "password": location.state.room_url });
-
-                    // sendstream();
                   }}
                 >
                   share
@@ -362,36 +332,16 @@ function Room() {
                 >
                   call
                 </button></div> : <h1></h1>))}
-              {users.length > 1 && (location.state.type == "owner" && (userstream == null ? <div className="w-full flex"><h2 className="text-2xl text mb-5 w-full text-center">waiting for {users[1]} to join</h2></div> : <h1></h1>))}
-              {/* <button
-                                className="w-24 text main py-1 px-2 rounded focus:outline-none"
-                                type="submit"
-                                onClick={(e) => {
-                                    // sendstream();
-                                    socket.emit("send_streams", { "password": location.state.room_url });
-                                }}
-                            >
-                                share
-                            </button> */}
-            </div>
-          </div>
-          
         </div>
-        <div className="w-full flex justify-center items-center mt-10">
+                    {users.length>1 && <div className="w-full flex justify-center items-center mt-10">
           <div onClick={() => {
             if (audio)
               setAudioicon(<BsMicMuteFill className="text text-xl" />);
             else
               setAudioicon(<BsFillMicFill className="text text-xl" />);
             setAudio(!audio);
-            // senderid.forEach((sender) => {
-            //     peer.removeTrack(sender);
-            // });
-            // console.log(peer.getSenders());
-            peer.close();
-            createoffer({ 'url': location.state.room_url });
-            socket.emit("send_streams", { "password": location.state.room_url });
-            socket.emit("send_streams", { "password": location.state.room_url });
+
+            socket.emit("userstream_changed", { "audio": !audio, "video": video_, "password": location.state.room_url })
           }} className="bg-white flex items-center justify-center w-14 mx-5 h-14 rounded-full bg-opacity-20 backdrop-filter backdrop-blur-lg main" >
             {audioicon}
           </div>
@@ -401,22 +351,13 @@ function Room() {
             else
               setVideoicon(<BsFillCameraVideoFill className="text text-xl" />);
             setVideo(!video_);
-            senderid.forEach((sender) => {
-              peer.removeTrack(sender);
-            });
-            let data = { 'url': location.state.room_url };
+            socket.emit("userstream_changed", { "audio": audio, "video": !video_, "password": location.state.room_url })
 
-            socket.emit("send_streams", { "password": location.state.room_url });
-            // socket.emit("send_streams", { "password": location.state.room_url });
           }} className="bg-white flex items-center justify-center w-14 mx-5 h-14 rounded-full bg-opacity-20 backdrop-filter backdrop-blur-lg main" >
             {videoicon}
           </div>
-        </div>
+        </div>}
       </div>
-
-
-
-      {/* <Webcam videoConstraints={{deviceId:0}}></Webcam> */}
     </>
   );
 }
